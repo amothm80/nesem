@@ -1,6 +1,6 @@
 use crate::bus::BUS;
 
-enum FLAGS6502{
+pub enum FLAGS6502{
     C = (1 << 0), //C Carry flag 0 false 1 true
     Z = (1 << 1), //Z Zero flag 0 result not zero 1 result zero
     I = (1 << 2), //I IRQ disable flag 0 enable 1 disable
@@ -13,8 +13,8 @@ enum FLAGS6502{
 
 struct INSTRUCTION{
     name:String,
-    operate:fn()->u8,
-    addrmode:fn()->u8,
+    operate:fn(&mut OLC6502)->u8,
+    addrmode:fn(&mut OLC6502)->u8,
     cycles:u8,
 }
 
@@ -88,101 +88,111 @@ impl OLC6502{
 
 //addressing modes
 
-    fn IMP()->u8{0}
-    fn IMM()->u8{0}
-    fn ZP0()->u8{0}
-    fn ZPX()->u8{0}
-    fn ZPY()->u8{0}
-    fn REL()->u8{0}
-    fn ABS()->u8{0}
-    fn ABX()->u8{0}
-    fn ABY()->u8{0}
-    fn IND()->u8{0}
-    fn IZX()->u8{0}
-    fn IZY()->u8{0}
+    fn IMP(&mut self)->u8{
+        self.fetched = self.a;
+        0
+    }
+    fn IMM(&mut self)->u8{
+        self.pc += 1;
+        self.addr_abs = self.pc;
+        0}
+    fn ZP0(&mut self)->u8{
+        self.addr_abs = self.read(self.pc) as u16;
+        self.pc += 1;
+        self.addr_abs &= 0x00ff;
+        0
+    }
+    fn ZPX(&mut self)->u8{0}
+    fn ZPY(&mut self)->u8{0}
+    fn REL(&mut self)->u8{0}
+    fn ABS(&mut self)->u8{0}
+    fn ABX(&mut self)->u8{0}
+    fn ABY(&mut self)->u8{0}
+    fn IND(&mut self)->u8{0}
+    fn IZX(&mut self)->u8{0}
+    fn IZY(&mut self)->u8{0}
 
 //opcodes
 
-    fn ADC()->u8{0}
-    fn AND()->u8{0}
-    fn ASL()->u8{0}
-    fn BCC()->u8{0}
+    fn ADC(&mut self)->u8{0}
+    fn AND(&mut self)->u8{0}
+    fn ASL(&mut self)->u8{0}
+    fn BCC(&mut self)->u8{0}
 
-    fn BCS()->u8{0}
-    fn BEQ()->u8{0}
-    fn BIT()->u8{0}
-    fn BMI()->u8{0}
+    fn BCS(&mut self)->u8{0}
+    fn BEQ(&mut self)->u8{0}
+    fn BIT(&mut self)->u8{0}
+    fn BMI(&mut self)->u8{0}
 
-    fn BNE()->u8{0}
-    fn BPL()->u8{0}
-    fn BRK()->u8{0}
-    fn BVC()->u8{0}
+    fn BNE(&mut self)->u8{0}
+    fn BPL(&mut self)->u8{0}
+    fn BRK(&mut self)->u8{0}
+    fn BVC(&mut self)->u8{0}
 
-    fn BVS()->u8{0}
-    fn CLC()->u8{0}
-    fn CLD()->u8{0}
-    fn CLI()->u8{0}
+    fn BVS(&mut self)->u8{0}
+    fn CLC(&mut self)->u8{0}
+    fn CLD(&mut self)->u8{0}
+    fn CLI(&mut self)->u8{0}
 
-    fn CLV()->u8{0}
-    fn CMP()->u8{0}
-    fn CPX()->u8{0}
-    fn CPY()->u8{0}
+    fn CLV(&mut self)->u8{0}
+    fn CMP(&mut self)->u8{0}
+    fn CPX(&mut self)->u8{0}
+    fn CPY(&mut self)->u8{0}
 
-    fn DEC()->u8{0}
-    fn DEX()->u8{0}
-    fn DEY()->u8{0}
-    fn EOR()->u8{0}
+    fn DEC(&mut self)->u8{0}
+    fn DEX(&mut self)->u8{0}
+    fn DEY(&mut self)->u8{0}
+    fn EOR(&mut self)->u8{0}
 
-    fn INC()->u8{0}
-    fn INX()->u8{0}
-    fn INY()->u8{0}
-    fn JMP()->u8{0}
+    fn INC(&mut self)->u8{0}
+    fn INX(&mut self)->u8{0}
+    fn INY(&mut self)->u8{0}
+    fn JMP(&mut self)->u8{0}
 
-    fn JSR()->u8{0}
-    fn LDA()->u8{0}
-    fn LDX()->u8{0}
-    fn LDY()->u8{0}
+    fn JSR(&mut self)->u8{0}
+    fn LDA(&mut self)->u8{0}
+    fn LDX(&mut self)->u8{0}
+    fn LDY(&mut self)->u8{0}
 
-    fn LSR()->u8{0}
-    fn NOP()->u8{0}
-    fn ORA()->u8{0}
-    fn PHA()->u8{0}
+    fn LSR(&mut self)->u8{0}
+    fn NOP(&mut self)->u8{0}
+    fn ORA(&mut self)->u8{0}
+    fn PHA(&mut self)->u8{0}
 
-    fn PHP()->u8{0}
-    fn PLA()->u8{0}
-    fn PLP()->u8{0}
-    fn ROL()->u8{0}
+    fn PHP(&mut self)->u8{0}
+    fn PLA(&mut self)->u8{0}
+    fn PLP(&mut self)->u8{0}
+    fn ROL(&mut self)->u8{0}
 
-    fn ROR()->u8{0}
-    fn RTI()->u8{0}
-    fn RTS()->u8{0}
-    fn SBC()->u8{0}
+    fn ROR(&mut self)->u8{0}
+    fn RTI(&mut self)->u8{0}
+    fn RTS(&mut self)->u8{0}
+    fn SBC(&mut self)->u8{0}
 
-    fn SEC()->u8{0}
-    fn SED()->u8{0}
-    fn SEI()->u8{0}
-    fn STA()->u8{0}
+    fn SEC(&mut self)->u8{0}
+    fn SED(&mut self)->u8{0}
+    fn SEI(&mut self)->u8{0}
+    fn STA(&mut self)->u8{0}
 
-    fn STX()->u8{0}
-    fn STY()->u8{0}
-    fn TAX()->u8{0}
-    fn TAY()->u8{0}
+    fn STX(&mut self)->u8{0}
+    fn STY(&mut self)->u8{0}
+    fn TAX(&mut self)->u8{0}
+    fn TAY(&mut self)->u8{0}
 
-    fn TSX()->u8{0}
-    fn TXA()->u8{0}
-    fn TXS()->u8{0}
-    fn TYA()->u8{0}
+    fn TSX(&mut self)->u8{0}
+    fn TXA(&mut self)->u8{0}
+    fn TXS(&mut self)->u8{0}
+    fn TYA(&mut self)->u8{0}
 
-    fn XXX()->u8{0}
+    fn XXX(&mut self)->u8{0}
 
 //cpu functions
-    fn clock(){}    
-    fn reset(){}
-    fn irq(){}
-    fn nmi(){}
+    fn reset(&self){}
+    fn irq(&self){}
+    fn nmi(&self){}
 
 
-    fn fetch()->u8{0}
+    fn fetch(&self)->u8{0}
 
 //memory operations
     pub fn read(&self, a: u16) -> u8{
@@ -191,6 +201,26 @@ impl OLC6502{
 
     pub fn write(&mut self, a:u16, d:u8){
         self.bus.write(a, d)        
+    }
+
+    fn clock(&mut self){
+        if self.cycles == 0 as u8{
+            self.opcode = self.read(self.pc);
+            self.pc += 1;
+
+            self.cycles = self.lookup[self.opcode as usize].cycles;
+
+            let addrmode= self.lookup[self.opcode as usize].addrmode;
+            let operate = self.lookup[self.opcode as usize].operate;
+
+            let additional_cycle1 = addrmode(self);
+            let additional_cycle2 = operate(self);
+
+            self.cycles += (additional_cycle1 & additional_cycle2);
+        }
+
+        self.cycles -= 1;
+
     }
 
 //flag operations
