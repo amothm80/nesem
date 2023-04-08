@@ -93,21 +93,70 @@ impl OLC6502{
         0
     }
     fn IMM(&mut self)->u8{
-        self.pc += 1;
         self.addr_abs = self.pc;
-        0}
+        self.pc += 1;
+        0
+    }
     fn ZP0(&mut self)->u8{
         self.addr_abs = self.read(self.pc) as u16;
         self.pc += 1;
         self.addr_abs &= 0x00ff;
         0
     }
-    fn ZPX(&mut self)->u8{0}
-    fn ZPY(&mut self)->u8{0}
-    fn REL(&mut self)->u8{0}
-    fn ABS(&mut self)->u8{0}
-    fn ABX(&mut self)->u8{0}
-    fn ABY(&mut self)->u8{0}
+    fn ZPX(&mut self)->u8{
+        self.addr_abs = (self.read(self.pc) + self.x) as u16;
+        self.pc += 1;
+        self.addr_abs &= 0x00ff;
+        0
+    }
+    fn ZPY(&mut self)->u8{
+        self.addr_abs = (self.read(self.pc) + self.y) as u16;
+        self.pc += 1;
+        self.addr_abs &= 0x00ff;
+        0
+    }
+    fn REL(&mut self)->u8{
+        self.addr_rel = self.read(self.pc) as u16;
+        self.pc += 1;
+        if (self.addr_rel & 0x80) != 0{
+            self.addr_rel |= 0xFF00;
+        }
+        0
+    }
+    fn ABS(&mut self)->u8{
+        let lo:u16 = self.read(self.pc) as u16;
+        self.pc += 1;
+        let hi:u16 = self.read(self.pc) as u16;
+        self.pc += 1;
+        self.addr_abs = (hi<<8)|lo;
+        0
+    }
+    fn ABX(&mut self)->u8{
+        let lo:u16 = self.read(self.pc) as u16;
+        self.pc += 1;
+        let hi:u16 = self.read(self.pc) as u16;
+        self.pc += 1;
+        self.addr_abs = ((hi<<8 as u16)|lo) as u16;
+        self.addr_abs += self.x as u16;
+        if ( self.addr_abs & 0xff00) != (hi << 8) {
+            return 1;
+        }else{
+            return 0;
+        }
+    }
+    fn ABY(&mut self)->u8{
+        let lo:u16 = self.read(self.pc) as u16;
+        self.pc += 1;
+        let hi:u16 = self.read(self.pc) as u16;
+        self.pc += 1;
+        self.addr_abs = ((hi<<8 as u16)|lo) as u16;
+        self.addr_abs += self.y as u16;
+        if ( self.addr_abs & 0xff00) != (hi << 8) {
+            return 1;
+        }else{
+            return 0;
+        }
+    }
     fn IND(&mut self)->u8{0}
     fn IZX(&mut self)->u8{0}
     fn IZY(&mut self)->u8{0}
@@ -216,7 +265,7 @@ impl OLC6502{
             let additional_cycle1 = addrmode(self);
             let additional_cycle2 = operate(self);
 
-            self.cycles += (additional_cycle1 & additional_cycle2);
+            self.cycles += additional_cycle1 & additional_cycle2;
         }
 
         self.cycles -= 1;
