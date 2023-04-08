@@ -118,7 +118,7 @@ impl OLC6502{
     fn REL(&mut self)->u8{
         self.addr_rel = self.read(self.pc) as u16;
         self.pc += 1;
-        if (self.addr_rel & 0x80) != 0{
+        if (self.addr_rel & 0x80) != 0{ //check if the 7th bit is active, ie signed, ie negative
             self.addr_rel |= 0xFF00;
         }
         0
@@ -157,9 +157,53 @@ impl OLC6502{
             return 0;
         }
     }
-    fn IND(&mut self)->u8{0}
-    fn IZX(&mut self)->u8{0}
-    fn IZY(&mut self)->u8{0}
+    fn IND(&mut self)->u8{
+        let ptr_lo:u16 = self.read(self.pc) as u16;
+        self.pc += 1;
+        let ptr_hi:u16 = self.read(self.pc) as u16;
+        self.pc += 1;
+
+        let ptr:u16 = (ptr_hi << 8) | ptr_lo;
+
+        if ptr_lo == 0x00FF // Simulate page boundary hardware bug
+        {
+            self.addr_abs = ((self.read(ptr & 0xFF00) as u16) << 8) | self.read(ptr + 0) as u16;
+        }
+        else // Behave normally
+        {
+            self.addr_abs = ((self.read(ptr + 1) as u16) << 8) | self.read(ptr + 0) as u16;
+        }
+        
+        return 0; 
+
+    }
+    fn IZX(&mut self)->u8{
+        let t:u16 = self.read(self.pc) as u16;
+        self.pc += 1;
+    
+        let lo:u16 = self.read((t + (self.x as u16)) & 0x00FF) as u16;
+        let hi:u16 = self.read(t + ((self.x + 1) as u16) & 0x00FF) as u16;
+    
+        self.addr_abs = (hi << 8) | lo;
+        
+        return 0;
+    }
+    fn IZY(&mut self)->u8{
+        let t:u16 = self.read(self.pc) as u16;
+        self.pc += 1;
+    
+        let lo:u16 = self.read(t & 0x00FF) as u16;
+        let hi:u16 = self.read((t + 1) & 0x00FF) as u16;
+    
+        self.addr_abs = (hi << 8) | lo;
+        self.addr_abs += self.y as u16;
+        
+        if ((addr_abs & 0xFF00) != (hi << 8)){
+            return 1;
+        }else{}
+            return 0;
+        }   
+    }
 
 //opcodes
 
