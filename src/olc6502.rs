@@ -21,7 +21,7 @@ struct INSTRUCTION{
 pub struct OLC6502{
    
     pc: u16, //accumulator
-    sp: u8, //stack pointer
+    stkp: u8, //stack pointer
 
     //8bit registers
     a: u8,
@@ -46,7 +46,7 @@ impl OLC6502{
     pub fn new ()->OLC6502{
         OLC6502{
             pc :0x0000,
-            sp : 0x00,
+            stkp : 0x00,
             a: 0,
             x: 0,
             y: 0,
@@ -198,36 +198,159 @@ impl OLC6502{
         self.addr_abs = (hi << 8) | lo;
         self.addr_abs += self.y as u16;
         
-        if ((addr_abs & 0xFF00) != (hi << 8)){
+        if ((self.addr_abs & 0xFF00) != (hi << 8)){
             return 1;
-        }else{}
+        }else{
             return 0;
         }   
     }
 
 //opcodes
 
-    fn ADC(&mut self)->u8{0}
-    fn AND(&mut self)->u8{0}
-    fn ASL(&mut self)->u8{0}
+    fn ADC(&mut self)->u8{
+        self.fetch();
+        let temp:u16 = self.a as u16 + self.fetched as u16 + self.get_flag(FLAGS6502::C) as u16;
+        self.set_flag(FLAGS6502::C, temp > 255);
+        self.set_flag(FLAGS6502::Z, (temp & 0x00ff) == 0);
+        self.set_flag(FLAGS6502::N, (temp & 0x80) != 0);
+        self.set_flag(FLAGS6502::V, (!(self.a as u16 ^ self.fetched as u16) & (self.a as u16 ^ temp)) != 0);
+        self.a = (temp & 0x00ff) as u8;
+        1
+    }
+    fn AND(&mut self)->u8{
+        self.fetch();
+        self.a &= self.fetched;
+        self.set_flag(FLAGS6502::Z, self.a == 0x00);
+        self.set_flag(FLAGS6502::N, (self.a & 0x80) != 0);
+        1
+    }
+    fn ASL(&mut self)->u8{
+        self.fetch();
+        let temp:u16 = (self.fetched as u16) << 1;
+        self.set_flag(FLAGS6502::C, (temp & 0xFF00) > 0);
+        self.set_flag(FLAGS6502::Z, (temp & 0x00FF) == 0x00);
+        self.set_flag(FLAGS6502::N, (temp & 0x80 )!=0);
+        if (self.lookup[self.opcode as usize].addrmode as usize == OLC6502::IMP as usize){
+            self.a = (temp & 0x00FF) as u8;
+        }else{
+            self.write(self.addr_abs, (temp & 0x00FF) as u8);
+        }
+        0
+    }
     fn BCC(&mut self)->u8{0}
 
-    fn BCS(&mut self)->u8{0}
-    fn BEQ(&mut self)->u8{0}
+    fn BCS(&mut self)->u8{
+        if self.get_flag(FLAGS6502::C) == 0{
+            self.cycles += 1;
+            self.addr_abs = self.pc + self.addr_rel;
+
+            if (self.addr_abs & 0xff00) != (self.pc & 0xff00){
+                self.cycles +=1;
+            }
+
+            self.pc = self.addr_abs;
+        }
+        0
+    }
+    fn BEQ(&mut self)->u8{
+        if self.get_flag(FLAGS6502::Z) == 1{
+            self.cycles += 1;
+            self.addr_abs = self.pc + self.addr_rel;
+
+            if (self.addr_abs & 0xff00) != (self.pc & 0xff00){
+                self.cycles +=1;
+            }
+
+            self.pc = self.addr_abs;
+        }
+        0
+    }
     fn BIT(&mut self)->u8{0}
-    fn BMI(&mut self)->u8{0}
+    fn BMI(&mut self)->u8{
+        if self.get_flag(FLAGS6502::N) == 1{
+            self.cycles += 1;
+            self.addr_abs = self.pc + self.addr_rel;
 
-    fn BNE(&mut self)->u8{0}
-    fn BPL(&mut self)->u8{0}
+            if (self.addr_abs & 0xff00) != (self.pc & 0xff00){
+                self.cycles +=1;
+            }
+
+            self.pc = self.addr_abs;
+        }
+        0
+    }
+
+    fn BNE(&mut self)->u8{
+        if self.get_flag(FLAGS6502::Z) == 0{
+            self.cycles += 1;
+            self.addr_abs = self.pc + self.addr_rel;
+
+            if (self.addr_abs & 0xff00) != (self.pc & 0xff00){
+                self.cycles +=1;
+            }
+
+            self.pc = self.addr_abs;
+        }
+        0
+    }
+    fn BPL(&mut self)->u8{
+        if self.get_flag(FLAGS6502::N) == 0{
+            self.cycles += 1;
+            self.addr_abs = self.pc + self.addr_rel;
+
+            if (self.addr_abs & 0xff00) != (self.pc & 0xff00){
+                self.cycles +=1;
+            }
+
+            self.pc = self.addr_abs;
+        }
+        0
+    }
     fn BRK(&mut self)->u8{0}
-    fn BVC(&mut self)->u8{0}
+    fn BVC(&mut self)->u8{
+        if self.get_flag(FLAGS6502::V) == 0{
+            self.cycles += 1;
+            self.addr_abs = self.pc + self.addr_rel;
 
-    fn BVS(&mut self)->u8{0}
-    fn CLC(&mut self)->u8{0}
-    fn CLD(&mut self)->u8{0}
-    fn CLI(&mut self)->u8{0}
+            if (self.addr_abs & 0xff00) != (self.pc & 0xff00){
+                self.cycles +=1;
+            }
 
-    fn CLV(&mut self)->u8{0}
+            self.pc = self.addr_abs;
+        }
+        0
+    }
+
+    fn BVS(&mut self)->u8{
+        if self.get_flag(FLAGS6502::V) == 1{
+            self.cycles += 1;
+            self.addr_abs = self.pc + self.addr_rel;
+
+            if (self.addr_abs & 0xff00) != (self.pc & 0xff00){
+                self.cycles +=1;
+            }
+
+            self.pc = self.addr_abs;
+        }
+        0
+    }
+    fn CLC(&mut self)->u8{
+        self.set_flag(FLAGS6502::C, false);
+        0
+    }
+    fn CLD(&mut self)->u8{
+        self.set_flag(FLAGS6502::D, false);
+        0
+    }
+    fn CLI(&mut self)->u8{
+        self.set_flag(FLAGS6502::I, false);
+        0
+    }
+
+    fn CLV(&mut self)->u8{
+        self.set_flag(FLAGS6502::V, false);
+        0
+    }
     fn CMP(&mut self)->u8{0}
     fn CPX(&mut self)->u8{0}
     fn CPY(&mut self)->u8{0}
@@ -250,17 +373,49 @@ impl OLC6502{
     fn LSR(&mut self)->u8{0}
     fn NOP(&mut self)->u8{0}
     fn ORA(&mut self)->u8{0}
-    fn PHA(&mut self)->u8{0}
+    fn PHA(&mut self)->u8{
+        self.write(0x0100 + self.stkp as u16, self.a);
+        self.stkp -= 1;
+        0
+    }
 
     fn PHP(&mut self)->u8{0}
-    fn PLA(&mut self)->u8{0}
+    fn PLA(&mut self)->u8{
+        self.stkp += 1;
+        self.a = self.read(0x0100 + self.stkp as u16);
+        self.set_flag(FLAGS6502::Z, self.a == 0x00);
+        self.set_flag(FLAGS6502::N, (self.a & 0x80) != 0);
+        0
+    }
     fn PLP(&mut self)->u8{0}
     fn ROL(&mut self)->u8{0}
 
     fn ROR(&mut self)->u8{0}
-    fn RTI(&mut self)->u8{0}
+    fn RTI(&mut self)->u8{
+        self.stkp += 1;
+        self.status = self.read(0x0100 + self.stkp as u16);
+        self.status &= !(FLAGS6502::B as u8);
+        self.status &= !(FLAGS6502::U as u8);
+
+        self.stkp += 1;
+        self.pc = self.read(0x0100 + self.stkp as u16) as u16;
+        self.stkp += 1;
+        self.pc |= (self.read(0x0100 + self.stkp as u16) as u16) << 8;
+
+        0
+    }
     fn RTS(&mut self)->u8{0}
-    fn SBC(&mut self)->u8{0}
+    fn SBC(&mut self)->u8{
+        self.fetch();
+        let value: u16 = self.fetched as u16 ^ 0x00ff;
+        let temp:u16 = self.a as u16 + self.fetched as u16 + self.get_flag(FLAGS6502::C) as u16;
+        self.set_flag(FLAGS6502::C, temp > 255);
+        self.set_flag(FLAGS6502::Z, (temp & 0x00ff) == 0);
+        self.set_flag(FLAGS6502::N, (temp & 0x80) != 0);
+        self.set_flag(FLAGS6502::V, (!(self.a as u16 ^ self.fetched as u16) & (self.a as u16 ^ temp)) != 0);
+        self.a = (temp & 0x00ff) as u8;
+        1
+    }
 
     fn SEC(&mut self)->u8{0}
     fn SED(&mut self)->u8{0}
@@ -280,19 +435,82 @@ impl OLC6502{
     fn XXX(&mut self)->u8{0}
 
 //cpu functions
-    fn reset(&self){}
-    fn irq(&self){}
-    fn nmi(&self){}
+    fn reset(&mut self){
+        self.a = 0;
+        self.x = 0;
+        self.y = 0;
+        self.stkp = 0xfd;
+        self.status = 0x00 | FLAGS6502::U as u8;
 
+        self.addr_abs = 0xfffc;
+        let lo:u16 = self.read(self.addr_abs+0) as u16;
+        let hi:u16 = self.read(self.addr_abs+1) as u16;
 
-    fn fetch(&self)->u8{0}
+        self.pc = (hi <<8)|lo;
+
+        self.addr_abs = 0x0000;
+        self.addr_rel = 0x0000;
+        self.fetched = 0x00;
+
+        self.cycles = 8;
+
+    }
+    fn irq(&mut self){
+        if (self.get_flag(FLAGS6502::I) == 0){
+            self.write(0x0100 + self.stkp as u16, (self.pc >> 8) as u8 & 0x00ff);
+            self.stkp -= 1;
+            self.write(0x0100 + self.stkp as u16, self.pc as u8 & 0x00ff);
+            self.stkp -= 1;
+
+            self.set_flag(FLAGS6502::B, false);
+            self.set_flag(FLAGS6502::U, true);
+            self.set_flag(FLAGS6502::I, true);
+            self.write(0x0100 + self.stkp as u16, self.status);
+            self.stkp -= 1;
+
+            self.addr_abs = 0xfffe;
+            let lo:u16 = self.read(self.addr_abs+0) as u16;
+            let hi:u16 = self.read(self.addr_abs+1) as u16;
+            self.pc = (hi <<8)|lo;
+
+            self.cycles = 7;
+
+        }
+    }
+    fn nmi(&mut self){
+        self.write(0x0100 + self.stkp as u16, (self.pc >> 8) as u8 & 0x00ff);
+        self.stkp -= 1;
+        self.write(0x0100 + self.stkp as u16, self.pc as u8 & 0x00ff);
+        self.stkp -= 1;
+
+        self.set_flag(FLAGS6502::B, false);
+        self.set_flag(FLAGS6502::U, true);
+        self.set_flag(FLAGS6502::I, true);
+        self.write(0x0100 + self.stkp as u16, self.status);
+        self.stkp -= 1;
+
+        self.addr_abs = 0xfffe;
+        let lo:u16 = self.read(self.addr_abs+0) as u16;
+        let hi:u16 = self.read(self.addr_abs+1) as u16;
+        self.pc = (hi <<8)|lo;
+
+        self.cycles = 7;
+    }
+
 
 //memory operations
-    pub fn read(&self, a: u16) -> u8{
+
+    fn fetch(&mut self)->u8{
+        if !(self.lookup[self.opcode as usize].addrmode as usize == OLC6502::IMP as usize){
+            self.fetched = self.read(self.addr_abs);
+        }
+        return self.fetched;
+    }
+    fn read(&self, a: u16) -> u8{
         self.bus.read(a, false)
     }
 
-    pub fn write(&mut self, a:u16, d:u8){
+    fn write(&mut self, a:u16, d:u8){
         self.bus.write(a, d)        
     }
 
