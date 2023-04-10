@@ -1,11 +1,12 @@
-use std;
-mod olc6502;
+//use std;
+mod p6502;
 mod bus;
-use crate::olc6502::OLC6502;
-use crate::bus::BUS;
+use crate::p6502::P6502;
+//use crate::bus::BUS;
 
 fn main() {
     println!("Hello, 1world!");
-    let mut cpu = OLC6502::new();
+    #[allow(unused_variables)]
+    let cpu = P6502::new();
     println!("Hello, 1world!");
 }
