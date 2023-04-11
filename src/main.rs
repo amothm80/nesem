@@ -5,6 +5,7 @@ use console_engine::ConsoleEngine;
 use console_engine::pixel;
 use console_engine::Color;
 use console_engine::KeyCode;
+use std::str;
 
 struct ram{data:u16}
 
@@ -63,16 +64,32 @@ fn draw_cpu(engine:&mut ConsoleEngine, cpu:&p6502::P6502, x:u8, y:u8, rows:u16, 
     engine.print_fbg(x as i32, y as i32, s_offset.as_str(), Color::White, Color::Black);
     engine.print_fbg(x as i32 + 8 , y as i32, "N", if (cpu.status & p6502::FLAGS6502::N as u8) != 0 {Color::Green}else{Color::Red} , Color::Black);
     engine.print_fbg(x as i32 + 10 , y as i32, "V", if (cpu.status & p6502::FLAGS6502::V as u8) != 0 {Color::Green}else{Color::Red} , Color::Black);
-    engine.print_fbg(x as i32 + 12 , y as i32, "U", if (cpu.status & p6502::FLAGS6502::U as u8) != 0 {Color::Green}else{Color::Red} , Color::Black);
+    engine.print_fbg(x as i32 + 12 , y as i32, "-", if (cpu.status & p6502::FLAGS6502::U as u8) != 0 {Color::Green}else{Color::Red} , Color::Black);
     engine.print_fbg(x as i32 + 14 , y as i32, "B", if (cpu.status & p6502::FLAGS6502::B as u8) != 0 {Color::Green}else{Color::Red} , Color::Black);
     engine.print_fbg(x as i32 + 16 , y as i32, "D", if (cpu.status & p6502::FLAGS6502::D as u8) != 0 {Color::Green}else{Color::Red} , Color::Black);
     engine.print_fbg(x as i32 + 18 , y as i32, "I", if (cpu.status & p6502::FLAGS6502::I as u8) != 0 {Color::Green}else{Color::Red} , Color::Black);
     engine.print_fbg(x as i32 + 20 , y as i32, "Z", if (cpu.status & p6502::FLAGS6502::Z as u8) != 0 {Color::Green}else{Color::Red} , Color::Black);
     engine.print_fbg(x as i32 + 22 , y as i32, "C", if (cpu.status & p6502::FLAGS6502::C as u8) != 0 {Color::Green}else{Color::Red} , Color::Black);
 
-    // DrawString(x , y + 10, "PC: $" + hex(nes.cpu.pc, 4));
-    // DrawString(x , y + 20, "A: $" +  hex(nes.cpu.a, 2) + "  [" + std::to_string(nes.cpu.a) + "]");
-    // DrawString(x , y + 30, "X: $" +  hex(nes.cpu.x, 2) + "  [" + std::to_string(nes.cpu.x) + "]");
-    // DrawString(x , y + 40, "Y: $" +  hex(nes.cpu.y, 2) + "  [" + std::to_string(nes.cpu.y) + "]");
-    // DrawString(x , y + 50, "Stack P: $" + hex(nes.cpu.stkp, 4));
+    let mut s_offset:String = String::from("PC: $");
+    s_offset.push_str(format!("{:04x}",cpu.pc).as_str());
+    engine.print_fbg(x as i32 , y as i32 + 1, s_offset.as_str(), Color::White , Color::Black);
+
+    let mut s_offset:String = String::from("A: $");
+    s_offset.push_str(format!("{:04x} [{}]",cpu.a,cpu.a).as_str());
+    engine.print_fbg(x as i32 , y as i32 + 2, s_offset.as_str(), Color::White , Color::Black);       
+
+    let mut s_offset:String = String::from("X: $");
+    s_offset.push_str(format!("{:04x} [{}]",cpu.x,cpu.x).as_str());
+    engine.print_fbg(x as i32 , y as i32 + 3, s_offset.as_str(), Color::White , Color::Black);          
+    
+    let mut s_offset:String = String::from("Y: $");
+    s_offset.push_str(format!("{:04x} [{}]",cpu.y,cpu.y).as_str());
+    engine.print_fbg(x as i32 , y as i32 + 4, s_offset.as_str(), Color::White , Color::Black);     
+
+    let mut s_offset:String = String::from("Stack P: $");
+    s_offset.push_str(format!("{:04x}",cpu.stkp).as_str());
+    engine.print_fbg(x as i32 , y as i32 + 5, s_offset.as_str(), Color::White , Color::Black);     
 }
+
+

@@ -20,26 +20,26 @@ struct INSTRUCTION{
 
 pub struct P6502{
    
-    pc: u16, //accumulator
-    stkp: u8, //stack pointer
+    pub pc: u16, //accumulator
+    pub stkp: u8, //stack pointer
 
     //8bit registers
-    a: u8,
-    x: u8,
-    y: u8,
+    pub a: u8,
+    pub x: u8,
+    pub y: u8,
 
-    status: u8, //NV_BDIZC
+    pub status: u8, //NV_BDIZC
 
-    fetched: u8,
+    pub fetched: u8,
 
-    addr_abs: u16,
-    addr_rel: u16,
-    opcode: u8,
-    cycles: u8,
+    pub addr_abs: u16,
+    pub addr_rel: u16,
+    pub opcode: u8,
+    pub cycles: u8,
 
     lookup:Vec<INSTRUCTION>,
 
-    bus:BUS,
+    pub bus:BUS,
 }
 #[allow(non_snake_case)]
 impl P6502{
@@ -742,11 +742,11 @@ impl P6502{
         }
         return self.fetched;
     }
-    fn read(&self, a: u16) -> u8{
+    pub fn read(&self, a: u16) -> u8{
         self.bus.read(a, false)
     }
 
-    fn write(&mut self, a:u16, d:u8){
+    pub fn write(&mut self, a:u16, d:u8){
         self.bus.write(a, d)        
     }
 
