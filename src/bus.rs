@@ -12,7 +12,7 @@ pub struct BUS{
 impl BUS{
     pub fn new ()->BUS{
         BUS{
-            ram:[1;MAX_MEM]
+            ram:[0;MAX_MEM]
         }      
     }    
     pub fn write(&mut self, addr: u16, data:u8){

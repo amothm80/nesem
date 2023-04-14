@@ -241,8 +241,9 @@ impl P6502{
         if self.get_flag(FLAGS6502::C) == 0
         {
             self.cycles +=1;
-            self.addr_abs = self.pc + self.addr_rel;
-            
+            //self.addr_abs = self.pc + self.addr_rel;
+            self.addr_abs =self.pc.wrapping_add_signed(self.addr_rel as i16);
+                        
             if(self.addr_abs & 0xFF00) != (self.pc & 0xFF00){self.cycles +=1;}
             self.pc = self.addr_abs;
         }
@@ -252,7 +253,8 @@ impl P6502{
     fn BCS(&mut self)->u8{
         if self.get_flag(FLAGS6502::C) == 0{
             self.cycles += 1;
-            self.addr_abs = self.pc + self.addr_rel;
+            //self.addr_abs = self.pc + self.addr_rel;
+            self.addr_abs =self.pc.wrapping_add_signed(self.addr_rel as i16);
 
             if (self.addr_abs & 0xff00) != (self.pc & 0xff00){
                 self.cycles +=1;
@@ -265,7 +267,8 @@ impl P6502{
     fn BEQ(&mut self)->u8{
         if self.get_flag(FLAGS6502::Z) == 1{
             self.cycles += 1;
-            self.addr_abs = self.pc + self.addr_rel;
+            //self.addr_abs = self.pc + self.addr_rel;
+            self.addr_abs =self.pc.wrapping_add_signed(self.addr_rel as i16);
 
             if (self.addr_abs & 0xff00) != (self.pc & 0xff00){
                 self.cycles +=1;
@@ -286,7 +289,8 @@ impl P6502{
     fn BMI(&mut self)->u8{
         if self.get_flag(FLAGS6502::N) == 1{
             self.cycles += 1;
-            self.addr_abs = self.pc + self.addr_rel;
+            //self.addr_abs = self.pc + self.addr_rel;
+            self.addr_abs =self.pc.wrapping_add_signed(self.addr_rel as i16);
 
             if (self.addr_abs & 0xff00) != (self.pc & 0xff00){
                 self.cycles +=1;
@@ -300,7 +304,8 @@ impl P6502{
     fn BNE(&mut self)->u8{
         if self.get_flag(FLAGS6502::Z) == 0{
             self.cycles += 1;
-            self.addr_abs = self.pc + self.addr_rel;
+            //self.addr_abs = self.pc + self.addr_rel;
+            self.addr_abs =self.pc.wrapping_add_signed(self.addr_rel as i16);
 
             if (self.addr_abs & 0xff00) != (self.pc & 0xff00){
                 self.cycles +=1;
@@ -313,7 +318,8 @@ impl P6502{
     fn BPL(&mut self)->u8{
         if self.get_flag(FLAGS6502::N) == 0{
             self.cycles += 1;
-            self.addr_abs = self.pc + self.addr_rel;
+            //self.addr_abs = self.pc + self.addr_rel;
+            self.addr_abs =self.pc.wrapping_add_signed(self.addr_rel as i16);
 
             if (self.addr_abs & 0xff00) != (self.pc & 0xff00){
                 self.cycles +=1;
@@ -343,7 +349,8 @@ impl P6502{
     fn BVC(&mut self)->u8{
         if self.get_flag(FLAGS6502::V) == 0{
             self.cycles += 1;
-            self.addr_abs = self.pc + self.addr_rel;
+            //self.addr_abs = self.pc + self.addr_rel;
+            self.addr_abs =self.pc.wrapping_add_signed(self.addr_rel as i16);
 
             if (self.addr_abs & 0xff00) != (self.pc & 0xff00){
                 self.cycles +=1;
@@ -357,7 +364,8 @@ impl P6502{
     fn BVS(&mut self)->u8{
         if self.get_flag(FLAGS6502::V) == 1{
             self.cycles += 1;
-            self.addr_abs = self.pc + self.addr_rel;
+            //self.addr_abs = self.pc + self.addr_rel;
+            self.addr_abs =self.pc.wrapping_add_signed(self.addr_rel as i16);
 
             if (self.addr_abs & 0xff00) != (self.pc & 0xff00){
                 self.cycles +=1;
@@ -671,7 +679,7 @@ impl P6502{
     fn XXX(&mut self)->u8{0}
 
 //cpu functions
-    fn reset(&mut self){
+    pub fn reset(&mut self){
         self.a = 0;
         self.x = 0;
         self.y = 0;
@@ -750,7 +758,7 @@ impl P6502{
         self.bus.write(a, d)        
     }
 
-    fn clock(&mut self){
+    pub fn clock(&mut self){
         if self.cycles == 0 as u8{
             self.opcode = self.read(self.pc);
             self.pc += 1;
@@ -767,7 +775,10 @@ impl P6502{
         }
 
         self.cycles -= 1;
+    }
 
+    pub fn complete(&self)->bool{
+        self.cycles == 0
     }
 
 //flag operations
@@ -787,14 +798,15 @@ impl P6502{
     pub fn set_flag(&mut self, f:FLAGS6502, v:bool){
         match f {
             //FLAGS6502::C => self.status |= 0b0000_0001,
-            FLAGS6502::C => self.status |= ( v as u8 ) << 0,
-            FLAGS6502::Z => self.status |= ( v as u8 ) << 1,
-            FLAGS6502::I => self.status |= ( v as u8 ) << 2,
-            FLAGS6502::D => self.status |= ( v as u8 ) << 3,
-            FLAGS6502::B => self.status |= ( v as u8 ) << 4,
-            FLAGS6502::U => self.status |= ( v as u8 ) << 5,
-            FLAGS6502::V => self.status |= ( v as u8 ) << 6,
-            FLAGS6502::N => self.status |= ( v as u8 ) << 7,            
+            FLAGS6502::C => if v {self.status |= ( v as u8 ) << 0}else{self.status &= !(( !v as u8 ) << 0)},
+            //FLAGS6502::C => self.status |= ( v as u8 ) << 0,
+            FLAGS6502::Z => if v {self.status |= ( v as u8 ) << 1}else{self.status &= !(( !v as u8 ) << 1)},
+            FLAGS6502::I => if v {self.status |= ( v as u8 ) << 2}else{self.status &= !(( !v as u8 ) << 2)},
+            FLAGS6502::D => if v {self.status |= ( v as u8 ) << 3}else{self.status &= !(( !v as u8 ) << 3)},
+            FLAGS6502::B => if v {self.status |= ( v as u8 ) << 4}else{self.status &= !(( !v as u8 ) << 4)},
+            FLAGS6502::U => if v {self.status |= ( v as u8 ) << 5}else{self.status &= !(( !v as u8 ) << 5)},
+            FLAGS6502::V => if v {self.status |= ( v as u8 ) << 6}else{self.status &= !(( !v as u8 ) << 6)},
+            FLAGS6502::N => if v {self.status |= ( v as u8 ) << 7}else{self.status &= !(( !v as u8 ) << 7)},
         }
 
     }

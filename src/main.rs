@@ -5,26 +5,69 @@ use console_engine::ConsoleEngine;
 use console_engine::pixel;
 use console_engine::Color;
 use console_engine::KeyCode;
-use std::str;
+use std::io;
+use std::io::Read;
+use std::io::BufReader;
+use std::fs::File;
 
 struct ram{data:u16}
 
 fn main() {
     #[allow(unused_variables)]
     let mut cpu = P6502::new();
+
+    let f = File::open("/home/ahmed/workspace/rust/nesem/nestest_nfl.nes").expect("");
+    let mut reader = BufReader::new(f);
+    let mut buffer = Vec::new();
+
+
+    reader.read_to_end(&mut buffer).expect("");
+
+    let mut mem_offset:u16 = 0xC000;
+    for value in buffer{
+         cpu.bus.ram[mem_offset as usize]  = value as u8;
+         println!("{:x}",mem_offset);
+         mem_offset += 1;
+    }
+
+    // let program = String::from("A2 0A 8E 00 00 A2 03 8E 01 00 AC 00 00 A9 00 18 6D 01 00 88 D0 FA 8D 02 00 EA EA EA");
+    // let program2 = program.split(" ");
+    // let mut mem_offset:u16 = 0x8000;
+    // for inst in program2{
+    //     cpu.bus.ram[mem_offset as usize]  = u8::from_str_radix(inst, 16).unwrap();
+    //     mem_offset += 1;
+    // }
+
+    // cpu.bus.ram[0xFFFC as usize] = 0x00;
+    // cpu.bus.ram[0xFFFD as usize] = 0x80;
+
+    cpu.bus.ram[0xFFFC as usize] = 0x00;
+    cpu.bus.ram[0xFFFD as usize] = 0xC0;
+
+
+    cpu.reset();
     // initializes a screen of 20x10 characters with a target of 3 frames per second
     // coordinates will range from [0,0] to [19,9]
     let mut engine = console_engine::ConsoleEngine::init(150, 40, 15).unwrap();
-    //let value = 14;
-    //let mut r = ram{data : 100};
-    // main loop, be aware that you'll have to break it because ctrl+C is captured
+
+
+
     loop {
         engine.wait_frame(); // wait for next frame + capture inputs
         draw_ram(&mut engine, &cpu,  0, 0, 0, 16, 16);
-        draw_ram(&mut engine, &cpu, 0, 17, 0x8000, 16, 16);
+        //draw_ram(&mut engine, &cpu, 0, 17, 0x8000, 16, 16);
+        draw_ram(&mut engine, &cpu, 0, 17, 0xC000, 16, 16);
         draw_cpu(&mut engine, &cpu, 60, 0, 0, 0);
         if engine.is_key_pressed(KeyCode::Char('q')) { // if the user presses 'q' :
             break; // exits app
+        }
+        if engine.is_key_pressed(KeyCode::Enter){
+            loop{
+                cpu.clock();
+                if cpu.complete(){
+                    break;
+                }
+            }
         }
         // if engine.is_key_pressed(KeyCode::Char('n')){
         //     cpu.status = 0b1000_0000;
